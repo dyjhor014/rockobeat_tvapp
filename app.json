@@ -20,12 +20,14 @@
     "android": {
       "splash": {
         "image": "./assets/images/icon-1920x720.png"
-      }
+      },
+      "package": "com.dyjhor05.rockobeatVideoPlayer"
     },
     "ios": {
       "splash": {
         "image": "./assets/images/icon-1920x720.png"
-      }
+      },
+      "bundleIdentifier": "com.dyjhor05.rockobeatVideoPlayer"
     },
     "newArchEnabled": true,
     "name": "rockobeatVideoPlayer",
