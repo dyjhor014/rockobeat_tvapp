@@ -1,6 +1,7 @@
 {
   "expo": {
     "plugins": [
+      "react-native-video",
       [
         "@react-native-tvos/config-tv",
         {
@@ -15,9 +16,11 @@
             "topShelfWide2x": "./assets/images/icon-4640x1440.png"
           }
         }
-      ]
+      ],
+      "expo-font"
     ],
     "android": {
+      "userInterfaceStyle": "light",
       "splash": {
         "image": "./assets/images/icon-1920x720.png"
       },
@@ -31,6 +34,11 @@
     },
     "newArchEnabled": true,
     "name": "rockobeatVideoPlayer",
-    "slug": "rockobeatVideoPlayer"
+    "slug": "rockobeatVideoPlayer",
+    "extra": {
+      "eas": {
+        "projectId": "3d9fd5f3-10a0-4346-973e-a09ed69b4a41"
+      }
+    }
   }
 }

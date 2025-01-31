@@ -1,18 +1,25 @@
-import { StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import AppNavigator from './src/navigation/AppNavigator';
+import { useFonts, Montserrat_400Regular, Montserrat_700Bold } from '@expo-google-fonts/montserrat';
+import { Roboto_400Regular, Roboto_700Bold } from '@expo-google-fonts/roboto';
+import AppLoading from 'expo-app-loading';
 
-export default function App() {
+const App = () => {
+  let [fontsLoaded] = useFonts({
+    Montserrat_400Regular,
+    Montserrat_700Bold,
+    Roboto_400Regular,
+    Roboto_700Bold,
+  });
+
+  if (!fontsLoaded) {
+    return <AppLoading />; // Muestra un loader mientras se cargan las fuentes
+  }
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-    </View>
-  );
-}
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+      <AppNavigator />
+
+  );
+};
+
+export default App;
