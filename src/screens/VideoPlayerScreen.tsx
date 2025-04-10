@@ -12,6 +12,7 @@ import { NavigationProp } from '@react-navigation/native';
 import * as Network from 'expo-network';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { logoutAndRedirect } from '../utils/Token';
+import { Animated } from 'react-native';
 
 type VideoScreenProps = {
   navigation: NavigationProp<any>;
@@ -42,6 +43,26 @@ export default function VideoScreen({ navigation }: VideoScreenProps) {
     const [isConnected, setIsConnected] = useState<boolean>(true);
 
     const hamburgerMenuRef = useRef<{ openMenu: () => void }>(null);
+
+    const blinkOpacity = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(blinkOpacity, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(blinkOpacity, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }, [currentVideo]);
+
 
     console.log("El valor del socketId es:", socketId);
     useEffect(() => { queueRef.current = queue; }, [queue]);
@@ -249,6 +270,12 @@ export default function VideoScreen({ navigation }: VideoScreenProps) {
           nativeControls={false}
         />
       )}
+
+    {!currentVideo && (
+        <Animated.View style={[styles.overlay, { opacity: blinkOpacity }]}>
+          <Text style={styles.overlayText2}>¡ENVÍA TU MÚSICA FAVORITA!</Text>
+        </Animated.View>
+      )}
       
       <View style={styles.controlsContainer}>
         {currentVideo && (
@@ -338,6 +365,15 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontFamily: fonts.montserratBold,
     textAlign: 'center',
+  },
+  overlayText2: {
+    fontSize: 42,
+    fontWeight: 'bold',
+    color: colors.secondary,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   logoutButton: {
     position: 'absolute',
