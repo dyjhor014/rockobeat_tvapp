@@ -18,9 +18,10 @@ import { io, Socket } from 'socket.io-client';
 import colors from '../styles/colors';
 import fonts from '../styles/fonts';
 import * as SecureStore from 'expo-secure-store';
-import { getToken } from '../utils/Token';
+import { getToken, postPlayVideo } from '../utils/Token';
 import { NavigationProp } from '@react-navigation/native';
 import * as Network from 'expo-network';
+import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
 
 const { height } = Dimensions.get('window');
 
@@ -29,10 +30,11 @@ const BASE_URL = 'http://200.106.13.116';
 
 // Define the structure of a video item
 interface VideoItem {
+  idUser: string;
   idEstacion: string;
   idVideo: string;
   title: string;
-  thumbnails: string;
+  thumbnail: string;
   url: string;
 }
 
@@ -67,7 +69,9 @@ const HamburgerMenu = forwardRef<{ openMenu: () => void }, Props>(
         setIdEstacion(idEstacion);
       }
     };
-    fetchData();
+    if(getToken('access_token', navigation)){
+      fetchData();
+    }
   }, []);
 
   // useEffect para conectar al socket
@@ -88,10 +92,19 @@ const HamburgerMenu = forwardRef<{ openMenu: () => void }, Props>(
       }
       });
 
-      socketRef.current.on('playVideo', (video: VideoItem) => {
+      socketRef.current.on('playVideo', async (video: VideoItem) => {
         console.log('🎥 Nuevo video recibido:', video);
+        // enviamos postPlayVideo a la api
+        const token = await getToken('access_token', navigation);
         onNewVideo(video);
         openMenu();
+        try {
+          const id = await SecureStore.getItemAsync('_id');
+          await postPlayVideo(video.idVideo, id, video.idUser, token);
+          console.log("✅ Datos enviados correctamente");
+        } catch (error) {
+          console.error("Error al enviar los datos:", error);
+        }
       });
     }
 
@@ -99,29 +112,6 @@ const HamburgerMenu = forwardRef<{ openMenu: () => void }, Props>(
       socketRef.current?.disconnect();
       console.log('❌ Socket desconectado');
       setSocketId(null);
-      const fetchStations = async () => {
-          try {
-            const response = await fetch(`${SOCKET_SERVER_URL}/stations/update-socket-id/${station}`, {
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${await getToken('access_token', navigation)}`,
-              },
-              method: 'POST',
-              body: JSON.stringify({ socketId: null }),
-            });
-            if (!response.ok) {
-              const error = await response.json();
-              throw new Error(error.message || 'Error al obtener las estaciones');
-            }
-            const result = await response.json();
-            setStation(result);
-          } catch (error) {
-            console.error('Error al obtener las estaciones:', error);
-          } finally {
-            setIsLoading(false);
-          }
-        };
-        fetchStations();
     };
   }, []);
 
@@ -232,11 +222,11 @@ useEffect(() => {
           data={queue}
           renderItem={({ item }) => (
             <View style={styles.videoItem}>
-              <Image source={{ uri: item.thumbnails }} style={styles.thumbnail} />
+              <Image source={{ uri: item.thumbnail }} style={styles.thumbnail} />
               <Text style={styles.videoTitle}>{item.title}</Text>
             </View>
           )}
-          keyExtractor={(item) => item.idVideo}
+          keyExtractor={(item, index) => `${item.idVideo}-${index}`}
           style={styles.videoList}
         />
 

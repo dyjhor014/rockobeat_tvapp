@@ -116,8 +116,8 @@ const LoginScreen = ({ navigation }) => {
   return (
     <>
     <View style={styles.container}>
-      <Text style={styles.title}>ROCKO<Text style={styles.title2}>BEAT</Text></Text>
-      <Logo size={100} style={{marginBottom: 20}} />
+      {/* <Text style={styles.title}>ROCKO<Text style={styles.title2}>BEAT</Text></Text> */}
+      <Logo size={220} style={{marginBottom: 20}} />
       <TextInput
         ref={emailRef}
         style={[styles.input, selectedIndex === 0 && styles.selected]}

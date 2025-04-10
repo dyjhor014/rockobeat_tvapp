@@ -3,14 +3,15 @@ import {
   useVideoPlayer, 
   VideoView,
 } from 'expo-video';
-import { StyleSheet, View, Text, Button } from 'react-native';
+import { StyleSheet, View, Text, Button, TouchableOpacity, Alert } from 'react-native';
 import HamburgerMenu from '../components/HamburgerMenu';
 import fonts from '../styles/fonts';
 import colors from '../styles/colors';
 import * as SecureStore from 'expo-secure-store';
-import { getToken } from '../utils/Token';
 import { NavigationProp } from '@react-navigation/native';
 import * as Network from 'expo-network';
+import Icon from 'react-native-vector-icons/Ionicons';
+import { logoutAndRedirect } from '../utils/Token';
 
 type VideoScreenProps = {
   navigation: NavigationProp<any>;
@@ -134,7 +135,7 @@ export default function VideoScreen({ navigation }: VideoScreenProps) {
       // Evento cuando el video finaliza
       const playToEndListener = player.addListener('playToEnd', () => {
         console.log("⏹ Video finalizado:", currentVideoRef.current?.title || "❌ No hay video");
-    
+        
         console.log("📦 Cola actual:", queueRef.current.map(v => v.title));
     
         if (queueRef.current.length > 0) {
@@ -183,17 +184,57 @@ export default function VideoScreen({ navigation }: VideoScreenProps) {
       return () => subscription.remove();
     }, [player, isPlaying, currentVideo]);
     
+    // Función para cerrar sesión
+    const handleLogout = () => {
+      // preguntamos al usuario si desea cerrar sesión
+      Alert.alert('Cerrar sesión', '¿Desea cerrar el reproductor y abrir otro?', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Cerrar sesión', onPress: async () => {
+          try {
+            // Detener la reproducción del video antes de cerrar sesión
+            if (player) {
+              await player.pause(); // Pausa la reproducción
+            }
+        
+            // Limpiar el estado de los videos y sesión
+            setCurrentVideo(null);
+            setQueue([]);
+            setSocketId(null);
+            setStation(null);
+            setNameEstacion(null);
+            setIdEstacion(null);
+        
+            // Borrar datos almacenados de sesión
+            await SecureStore.deleteItemAsync('selectedStation');
+            await SecureStore.deleteItemAsync('nameEstacion');
+            await SecureStore.deleteItemAsync('idEstacion');
+
+            await logoutAndRedirect(navigation);
+          } catch (error) {
+            console.error('Error al cerrar sesión:', error);
+            Alert.alert('Error', 'No se pudo cerrar sesión. Intenta de nuevo.');
+          }
+        } },
+      ]);
+    };
 
   return (
     <View style={styles.contentContainer}>
       {/* Aviso de falta de conexión */}
       {!isConnected && (
         <View style={styles.overlay}>
-          <Text style={styles.overlayText}>No hay conexión a Internet</Text>
+          <Text style={styles.overlayText}>Se perdió la conexión a Internet, reintentando...</Text>
         </View>
       )}
+      {/* Botón de cierre de sesión */}
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <Icon name="log-out" size={24} color={"rgba(255,255,255,0.05)"} />
+      </TouchableOpacity>
+
       <HamburgerMenu ref={hamburgerMenuRef} onNewVideo={handleNewVideo} queue={queue} onSocketIdChange={(id) => setSocketId(id)} navigation={navigation} />
+      <Text style={styles.titleBorder}>{nameEstacion ? nameEstacion : 'Reproductor'}</Text>
       <Text style={styles.title}>{nameEstacion ? nameEstacion : 'Reproductor'}</Text>
+      <Text style={styles.title2Border}>{idEstacion ? idEstacion : 'No hay id'}</Text>
       <Text style={styles.title2}>{idEstacion ? idEstacion : 'No hay id'}</Text>
       <Text style={styles.subTitle}>
         {currentVideo ? currentVideo.title : 'Esperando video...'}
@@ -233,13 +274,23 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  title: {
+  titleBorder: {
     fontSize: 36,
-    color: colors.white,
+    position: 'absolute',
+    zIndex: 10,
+    top: 0,
+    fontFamily: fonts.montserratBold,
+  },
+  title: {
+    fontSize: 35,
     zIndex: 10,
     position: 'absolute',
     top: 0,
     fontFamily: fonts.montserratBold,
+    color: colors.white, // Color del borde
+    textShadowColor: 'black', // Opcional: sombra para un efecto más grueso
+    textShadowOffset: { width: 3, height: 3 },
+    textShadowRadius: 1,
   },
   subTitle: {
     fontSize: 18,
@@ -247,10 +298,18 @@ const styles = StyleSheet.create({
     zIndex: 10,
     position: 'absolute',
     bottom: 0,
-    fontFamily: fonts.robotoBold,
+    fontFamily: fonts.montserratBold,
   },
   controlsContainer: {
     marginTop: 10,
+  },
+  title2Border: {
+    fontSize: 18,
+    color: colors.white,
+    zIndex: 10,
+    position: 'absolute',
+    top: 40,
+    fontFamily: fonts.montserratBold,
   },
   title2: {
     fontSize: 18,
@@ -258,7 +317,10 @@ const styles = StyleSheet.create({
     zIndex: 10,
     position: 'absolute',
     top: 40,
-    fontFamily: fonts.robotoBold,
+    fontFamily: fonts.montserratBold,
+    textShadowColor: 'black', // Opcional: sombra para un efecto más grueso
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 1,
   },
   overlay: {
     position: 'absolute',
@@ -276,5 +338,13 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontFamily: fonts.montserratBold,
     textAlign: 'center',
+  },
+  logoutButton: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    zIndex: 1000,
+    padding: 10,
+    backgroundColor: 'rgba(0,0,0,0.2)',
   },
 });

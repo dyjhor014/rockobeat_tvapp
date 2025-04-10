@@ -18,6 +18,7 @@ interface Station {
   _id: string;
   idEstacion: string;
   nameEstacion: string;
+  creditsForVideo: number;
 }
 
 const SelectVideoPlayer = ({ navigation }) => {
@@ -90,7 +91,7 @@ const SelectVideoPlayer = ({ navigation }) => {
   // Función para guardar la estación seleccionada en Secure Storage
   const handleOpenStation = async () => {
     if (!selectedStation) {
-      Alert.alert('Error', 'Por favor selecciona una estación');
+      /* Alert.alert('Error', 'Por favor selecciona una estación'); */
       return;
     }
   
@@ -110,15 +111,16 @@ const SelectVideoPlayer = ({ navigation }) => {
         throw new Error('No se encontraron datos de la estación');
       }
   
-      const { nameEstacion, idEstacion } = response.data;
+      const { _id, nameEstacion, idEstacion, creditsForVideo } = response.data;
   
       // Guardamos directamente en SecureStore
       await SecureStore.setItemAsync('nameEstacion', nameEstacion.toString());
       await SecureStore.setItemAsync('idEstacion', idEstacion.toString());
+      await SecureStore.setItemAsync('_id', _id.toString());
   
-      console.log('Estación guardada correctamente en Secure Store:', nameEstacion, idEstacion);
+      console.log('Estación guardada correctamente en Secure Store:', nameEstacion, idEstacion, _id);
   
-      Alert.alert('Éxito', 'Estación guardada correctamente');
+      /* Alert.alert('Éxito', 'Estación guardada correctamente'); */
       navigation.navigate('VideoPlayer');
   
     } catch (error) {
@@ -131,8 +133,8 @@ const SelectVideoPlayer = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>ROCKO<Text style={styles.title2}>BEAT</Text></Text>
-      <Logo size={100} style={{ marginBottom: 20 }} />
+      
+      <Logo size={220} style={{ marginBottom: 20 }} />
 
       <View>
         {/* Lista desplegable de estaciones */}
@@ -151,7 +153,7 @@ const SelectVideoPlayer = ({ navigation }) => {
       <TouchableOpacity style={[styles.button, selectedIndex === 1 && styles.selected]} onPress={handleOpenStation}>
         <Text style={styles.buttonText}>Abrir Estación</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={[styles.buttonCerrarSesion, selectedIndex === 1 && styles.selected]} onPress={handleLogout}>
+      <TouchableOpacity style={[styles.buttonCerrarSesion]} onPress={handleLogout}>
         <Text style={styles.buttonText}>Cerrar Sesión</Text>
       </TouchableOpacity>
       </View>

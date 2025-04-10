@@ -180,3 +180,37 @@ interface Station {
     const result = await response.json();
     return result;
 };
+
+export const postPlayVideo = async (idVideo: string, id: string, idUser: string, token: string ): Promise<void> => {
+  const responseStation = await fetch(`http://200.106.13.116/stations/find_by_id/${id}/`, {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    method: 'GET',
+  });
+
+  if (!responseStation.ok) {
+    const error = await responseStation.json();
+    throw new Error(error.message || error.error || 'Error al obtener los datos de la estación');
+  }
+
+  const { creditsForVideo } = await responseStation.json();   
+  
+  const response = await fetch(`http://200.106.13.116/videos/play`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      method: 'POST',
+      body: JSON.stringify({ idVideo, idEstacion:id, idUser, creditsForVideo }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || error.error || 'Error al guardar datos de reproducir el video');
+    }
+
+    const result = await response.json();
+    return result;
+};
