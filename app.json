@@ -1,7 +1,6 @@
 {
   "expo": {
     "plugins": [
-      "react-native-video",
       [
         "@react-native-tvos/config-tv",
         {

@@ -30,6 +30,12 @@
           <string>com.dyjhor05.rockobeatVideoPlayer</string>
         </array>
       </dict>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>exp+rockobeatvideoplayer</string>
+        </array>
+      </dict>
     </array>
     <key>CFBundleVersion</key>
     <string>1</string>
