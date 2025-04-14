@@ -13,7 +13,7 @@ const AppNavigator = () => {
       <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Login">
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="VideoPlayer" component={VideoPlayerScreen} />
-        <Stack.Screen name="SelectVideoPlayer" component={SelectVideoPlayer} />
+        <Stack.Screen name="SelectVideoPlayer" component={SelectVideoPlayer} options={{ gestureEnabled: false }}/>
       </Stack.Navigator>
     </NavigationContainer>
   );

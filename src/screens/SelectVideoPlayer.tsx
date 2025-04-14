@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Alert, StyleSheet, TouchableOpacity, useTVEventHandler, Platform } from 'react-native';
+import { View, Text, Alert, StyleSheet, TouchableOpacity, Platform, FlatList } from 'react-native';
 import Logo from '../components/Logo';
-import RNPickerSelect from 'react-native-picker-select';
 import * as SecureStore from 'expo-secure-store';
 import colors from '../styles/colors';
 import fonts from '../styles/fonts';
 import { getToken } from '../utils/Token';
 import axios from 'axios';
 import { logoutAndRedirect } from '../utils/Token';
+import Icon from 'react-native-vector-icons/Ionicons';
+
 const isTV = Platform.isTV;
 
 console.log("¿Es un dispositivo TV?", isTV);
@@ -25,38 +26,25 @@ const SelectVideoPlayer = ({ navigation }) => {
   const [stations, setStations] = useState<Station[]>([]);
   const [selectedStation, setSelectedStation] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  
-  const inputs = ['logout', 'login'];
+  const [error, setError] = useState<string | null>(null);
+  const [showStationList, setShowStationList] = useState(false);
 
-  // Manejo de eventos del control remoto en TV
-  useTVEventHandler((evt) => {
-    if (!evt) return;
-
-    switch (evt.eventType) {
-      case 'up':
-        setSelectedIndex((prev) => {
-          const newIndex = prev === 0 ? prev : prev - 1;
-          return newIndex;
-        });
-        break;
-      case 'down':
-        setSelectedIndex((prev) => {
-          const newIndex = prev === inputs.length - 1 ? prev : prev + 1;
-          return newIndex;
-        });
-        break;
-      case 'select':
-        if (inputs[selectedIndex] === 'login') {
-          handleOpenStation();
-        } /* else if (inputs[selectedIndex] === 'logout') {
-          handleLogout();
-        } */
-        break;
-      default:
-        break;
-    }
-  });
+  // Verificar token al iniciar
+  useEffect(() => {
+    const verifyToken = async () => {
+      try {
+        const token = await getToken('access_token', navigation);
+        if (!token) {
+          navigation.replace('Login');
+          return;
+        }
+        fetchStations(token);
+      } catch (err) {
+        setError('Error de autenticación');
+      }
+    };
+    verifyToken();
+  }, []);
   
   // Funcion para cerrar sesión
   const handleLogout = async () => {
@@ -64,29 +52,44 @@ const SelectVideoPlayer = ({ navigation }) => {
   };
 
   // Función para obtener las estaciones del servidor al cargar la página
-  useEffect(() => {
-    const fetchStations = async () => {
-      try {
-        const response = await fetch(`${BASE_URL}/stations/all/`, {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${await getToken('access_token', navigation)}`,
-          },
-          method: 'GET',
-        });
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || 'Error al obtener las estaciones');
-        }
-        const result = await response.json();
-        setStations(result);
-      } catch (error) {
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchStations();
-  }, []);
+  const fetchStations = async (token: string) => {
+    try {
+      const response = await fetch(`${BASE_URL}/stations/all/`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) throw new Error('Error al obtener estaciones');
+      
+      const result = await response.json();
+      setStations(result);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <Text>Cargando estaciones...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={{ color: 'red' }}>{error}</Text>
+        <TouchableOpacity onPress={() => navigation.replace('Login')}>
+          <Text>Volver al login</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   // Función para guardar la estación seleccionada en Secure Storage
   const handleOpenStation = async () => {
@@ -131,6 +134,21 @@ const SelectVideoPlayer = ({ navigation }) => {
     }
   };
 
+  const renderStationItem = ({ item }) => (
+    <TouchableOpacity 
+      style={[
+        styles.stationItem, 
+        selectedStation === item._id && styles.selectedStation
+      ]}
+      onPress={() => {
+        setSelectedStation(item._id);
+        setShowStationList(false);
+      }}
+    >
+      <Text style={styles.stationText}>{item.nameEstacion}</Text>
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
       
@@ -138,19 +156,38 @@ const SelectVideoPlayer = ({ navigation }) => {
 
       <View>
         {/* Lista desplegable de estaciones */}
-      <RNPickerSelect
-        placeholder={{ label: 'Selecciona una estación', value: null }}
-        items={stations.map((station) => ({
-          label: station.nameEstacion,
-          value: station._id,
-        }))}
-        onValueChange={(value) => setSelectedStation(value)}
-        value={selectedStation}
-        style={pickerSelectStyles}
-        />
+        {/* Selector personalizado */}
+        <TouchableOpacity 
+          style={styles.stationSelector}
+          onPress={() => setShowStationList(!showStationList)}
+        >
+          <Text style={styles.selectorText}>
+            {selectedStation 
+              ? stations.find(s => s._id === selectedStation)?.nameEstacion 
+              : 'Selecciona una estación'}
+          </Text>
+          <Icon 
+            name={showStationList ? 'chevron-up' : 'chevron-down'} 
+            size={24} 
+            color={colors.primary} 
+          />
+        </TouchableOpacity>
+
+        {/* Lista desplegable */}
+        {showStationList && (
+          <View style={styles.stationListContainer}>
+            <FlatList
+              data={stations}
+              renderItem={renderStationItem}
+              keyExtractor={(item) => item._id}
+              style={styles.stationList}
+              nestedScrollEnabled={true}
+            />
+          </View>
+        )}
 
       {/* Botón para abrir la estación */}
-      <TouchableOpacity style={[styles.button, selectedIndex === 1 && styles.selected]} onPress={handleOpenStation}>
+      <TouchableOpacity style={[styles.button]} onPress={handleOpenStation}>
         <Text style={styles.buttonText}>Abrir Estación</Text>
       </TouchableOpacity>
       <TouchableOpacity style={[styles.buttonCerrarSesion]} onPress={handleLogout}>
@@ -160,32 +197,6 @@ const SelectVideoPlayer = ({ navigation }) => {
     </View>
   );
 };
-
-// Estilo modificado para RNPickerSelect
-  const pickerSelectStyles = StyleSheet.create({
-    inputIOS: {
-      fontSize: 16,
-      paddingVertical: 12,
-      paddingHorizontal: 10,
-      borderWidth: 1,
-      borderColor: 'gray',
-      borderRadius: 4,
-      color: 'black',
-      backgroundColor: colors.bg,
-      width: '100%',
-      marginBottom: 20,
-    },
-    inputAndroid: {
-      fontSize: 16,
-      borderWidth: 1,
-      borderColor: 'gray',
-      borderRadius: 8,
-      color: 'black',
-      backgroundColor: colors.bg,
-      marginBottom: 20,
-      width: 260,
-    },
-  });
 
 // Estilos generales
 const styles = StyleSheet.create({
@@ -236,6 +247,46 @@ const styles = StyleSheet.create({
   selected: {
     borderColor: colors.secondary,
     borderWidth: 2,
+  },
+  stationSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: 260,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 5,
+    marginBottom: 20,
+    backgroundColor: colors.blank,
+  },
+  selectorText: {
+    fontSize: 16,
+    color: colors.text,
+  },
+  stationListContainer: {
+    maxHeight: 200,
+    width: 260,
+    marginBottom: 20,
+    backgroundColor: colors.blank,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  stationList: {
+    padding: 10,
+  },
+  stationItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.dark,
+  },
+  selectedStation: {
+    backgroundColor: colors.light,
+  },
+  stationText: {
+    fontSize: 16,
+    color: colors.text,
   },
 });
 

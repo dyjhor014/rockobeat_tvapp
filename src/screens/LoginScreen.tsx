@@ -18,7 +18,7 @@ const LoginScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isTokenValid, setIsTokenValid] = useState<boolean | null>(null);  // Estado para el token
+  const [isTokenValid, setIsTokenValid] = useState<boolean | null>(false);  // Estado para el token
   const { setUserRole } = useUserRole();
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -28,7 +28,7 @@ const LoginScreen = ({ navigation }) => {
   const inputs = ['email', 'password', 'login'];
 
    // Manejo de eventos del control remoto en TV
-   useTVEventHandler((evt) => {
+   /* useTVEventHandler((evt) => {
     if (!evt) return;
 
     switch (evt.eventType) {
@@ -56,27 +56,20 @@ const LoginScreen = ({ navigation }) => {
       default:
         break;
     }
-  });
+  }); */
 
+  // Verificar token al montar
   useEffect(() => {
-    const verifyToken = async () => {
+    const checkTokenOnMount = async () => {
       const tokenExists = await checkToken('access_token');
+      if (tokenExists) {
+        navigation.replace('SelectVideoPlayer');
+      }
       setIsTokenValid(tokenExists);
     };
-
-    verifyToken();
-  }, []);  // Solo se ejecuta cuando el componente se monta
-
-  useEffect(() => {
-    // Si el token es válido, redirige a 
-    if (isTokenValid) {
-      navigation.navigate('SelectVideoPlayer');
-    }
-  }, [isTokenValid]);  // Solo se ejecuta cuando isTokenValid cambia
-
-  if (isTokenValid === null) {
-    return null; // Aquí puedes agregar un indicador de carga si lo prefieres
-  }
+    
+    checkTokenOnMount();
+  }, []);
 
   const togglePasswordVisibility = () => {
     setIsPasswordVisible(!isPasswordVisible);
@@ -96,7 +89,7 @@ const LoginScreen = ({ navigation }) => {
       const { role } = await AuthService.login(loginData);
       setUserRole(role); // Actualiza el rol en el contexto
       console.log('Usuario autenticado con rol:', role);
-      navigation.navigate('SelectVideoPlayer');
+      navigation.replace('SelectVideoPlayer');
     } catch (error: any) {
       // Si el error es 401, significa que el email o password no son correctos
       if (error.status === 401) {
@@ -120,7 +113,7 @@ const LoginScreen = ({ navigation }) => {
       <Logo size={220} style={{marginBottom: 20}} />
       <TextInput
         ref={emailRef}
-        style={[styles.input, selectedIndex === 0 && styles.selected]}
+        style={[styles.input]}
         placeholder="Correo electrónico"
         value={email}
         onChangeText={setEmail}
@@ -129,7 +122,7 @@ const LoginScreen = ({ navigation }) => {
       />
       <TextInput
         ref={passwordRef}
-        style={[styles.input, selectedIndex === 1 && styles.selected]}
+        style={[styles.input]}
         placeholder="Contraseña"
         value={password}
         onChangeText={setPassword}
@@ -138,7 +131,7 @@ const LoginScreen = ({ navigation }) => {
        <TouchableOpacity onPress={togglePasswordVisibility} style={styles.icon}>
         <Icon name={isPasswordVisible ? 'eye-off' : 'eye'} size={24} color="gray" />
       </TouchableOpacity>
-      <TouchableOpacity  style={[styles.button, selectedIndex === 2 && styles.selected]} onPress={handleLogin}>
+      <TouchableOpacity  style={[styles.button]} onPress={handleLogin}>
         <Text style={styles.buttonText}>{ isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión' }</Text>
       </TouchableOpacity>
     </View>

@@ -8,12 +8,7 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
+import { Animated, Easing } from 'react-native';
 import { io, Socket } from 'socket.io-client';
 import colors from '../styles/colors';
 import fonts from '../styles/fonts';
@@ -21,7 +16,6 @@ import * as SecureStore from 'expo-secure-store';
 import { getToken, postPlayVideo } from '../utils/Token';
 import { NavigationProp } from '@react-navigation/native';
 import * as Network from 'expo-network';
-import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
 
 const { height } = Dimensions.get('window');
 
@@ -48,7 +42,7 @@ interface Props {
 const HamburgerMenu = forwardRef<{ openMenu: () => void }, Props>(
   ({ onNewVideo, queue, onSocketIdChange, navigation }, ref) => {
   const [isOpen, setIsOpen] = useState(false);
-  const menuPosition = useSharedValue(800);
+  const menuPosition = useRef(new Animated.Value(800)).current;
   const socketRef = useRef<Socket | null>(null);
   const [station, setStation] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -163,22 +157,30 @@ const HamburgerMenu = forwardRef<{ openMenu: () => void }, Props>(
           return () => subscription.remove();
         }, []);
 
-  const menuStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ translateX: menuPosition.value }],
+  const menuStyle = {
+    transform: [{ translateX: menuPosition }]
     };
-  });
 
   const openMenu = () => {
-    menuPosition.value = withTiming(180, { duration: 300, easing: Easing.inOut(Easing.ease) });
-    setIsOpen(true);
-  };
+    Animated.timing(menuPosition, {
+    toValue: 180,
+    duration: 300,
+    easing: Easing.inOut(Easing.ease),
+    useNativeDriver: true,
+    }).start();
+        setIsOpen(true);
+    };
   
   // Función para cerrar el menú
   const closeMenu = () => {
-    menuPosition.value = withTiming(800, { duration: 300, easing: Easing.inOut(Easing.ease) });
-    setIsOpen(false);
-  };
+    Animated.timing(menuPosition, {
+    toValue: 800,
+    duration: 300,
+    easing: Easing.inOut(Easing.ease),
+    useNativeDriver: true,
+    }).start();
+       setIsOpen(false);
+    };
   
   // Toggle manual del menú
   const toggleMenu = () => {
@@ -195,7 +197,12 @@ useEffect(() => {
   
     if (isOpen) {
       timeoutId = setTimeout(() => {
-        menuPosition.value = withTiming(800, { duration: 300, easing: Easing.inOut(Easing.ease) });
+        Animated.timing(menuPosition, {
+            toValue: 800,
+            duration: 300,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }).start();
         setIsOpen(false);
       }, 5000);
     }

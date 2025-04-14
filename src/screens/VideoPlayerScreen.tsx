@@ -13,6 +13,7 @@ import * as Network from 'expo-network';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { logoutAndRedirect } from '../utils/Token';
 import { Animated } from 'react-native';
+import { useKeepAwake } from 'expo-keep-awake'; 
 
 type VideoScreenProps = {
   navigation: NavigationProp<any>;
@@ -30,6 +31,7 @@ interface VideoItem {
 }
 
 export default function VideoScreen({ navigation }: VideoScreenProps) {
+    useKeepAwake();
     const [queue, setQueue] = useState<VideoItem[]>([]);
     const [currentVideo, setCurrentVideo] = useState<VideoItem | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -379,7 +381,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 10,
     left: 10,
-    zIndex: 1000,
+    zIndex: 1500,
     padding: 10,
     backgroundColor: 'rgba(0,0,0,0.2)',
   },
